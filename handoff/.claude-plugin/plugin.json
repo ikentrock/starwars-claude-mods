@@ -1,0 +1,1 @@
+{ "name": "handoff", "version": "0.1.0", "description": "Builds a detailed handoff prompt at 250k tokens, on cold cache, or on /handoff, with a one-click fresh chat.", "types": "./types/index.d.ts" }

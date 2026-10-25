@@ -1,0 +1,6 @@
+{
+  "name": "power-cells",
+  "version": "0.1.0",
+  "description": "Star Wars style power gauge above the prompt: context tokens left plus the 5-hour and weekly limits, with low-power warnings.",
+  "types": "./types/index.d.ts"
+}

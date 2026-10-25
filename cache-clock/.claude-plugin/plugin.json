@@ -1,0 +1,18 @@
+{
+  "name": "cache-clock",
+  "version": "0.1.0",
+  "description": "Countdown until the prompt cache goes cold, with a Keep Warm button and /keep-warm command.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "cacheTtl": {
+      "type": "string",
+      "title": "Cache lifetime",
+      "description": "How long the prompt cache lives after a reply: 5m (default) or 1h.",
+      "default": "5m",
+      "options": [
+        "5m",
+        "1h"
+      ]
+    }
+  }
+}

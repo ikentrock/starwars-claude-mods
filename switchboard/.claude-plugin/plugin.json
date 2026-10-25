@@ -1,0 +1,1 @@
+{ "name": "switchboard", "version": "0.1.0", "description": "/mods control panel: list every mod, auto-discover new ones, toggle them, hide their panels.", "types": "./types/index.d.ts" }

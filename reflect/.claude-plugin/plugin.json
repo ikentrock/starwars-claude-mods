@@ -1,0 +1,13 @@
+{
+  "name": "reflect",
+  "version": "0.1.0",
+  "description": "Spots hard rules and preferences in your prompts and offers to save them to memory, CLAUDE.md or your second brain.",
+  "userConfig": {
+    "secondBrainFile": {
+      "type": "string",
+      "title": "Second brain file",
+      "description": "Markdown file that receives rules saved to your second brain (absolute path, or ~/ path).",
+      "default": "~/second-brain/rules.md"
+    }
+  }
+}

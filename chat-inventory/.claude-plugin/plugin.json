@@ -1,0 +1,1 @@
+{ "name": "chat-inventory", "version": "0.1.0", "description": "Zero-token side panel, In This Chat: goal, to-dos, connectors, skills and files.", "types": "./types/index.d.ts" }

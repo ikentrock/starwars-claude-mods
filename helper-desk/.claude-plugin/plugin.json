@@ -1,0 +1,1 @@
+{ "name": "helper-desk", "version": "0.1.0", "description": "Purple progress taskbar above the prompt plus a side panel of sub-agents with colors, progress and token cost.", "types": "./types/index.d.ts" }

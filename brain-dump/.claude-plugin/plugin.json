@@ -1,0 +1,1 @@
+{ "name": "brain-dump", "version": "0.1.0", "description": "Catches long unstructured brain dumps, asks clarifying questions with a background model, and rewrites them into a structured prompt." }
