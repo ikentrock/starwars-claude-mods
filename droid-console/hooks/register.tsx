@@ -46,7 +46,7 @@ export const register: Register = on => {
     const current = await read($, personality)
     const next = (ORDER as string[]).includes(wanted)
       ? (wanted as Personality)
-      : ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]
+      : (ORDER[(ORDER.indexOf(current) + 1) % ORDER.length] ?? 'r2d2')
     await update($, personality, () => next)
 
     return { text: `Personality set to ${LOOKS[next].name}.` }
