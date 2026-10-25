@@ -1,6 +1,20 @@
 {
   "name": "power-cells",
-  "version": "0.1.0",
-  "description": "Star Wars style power gauge above the prompt: context tokens left plus the 5-hour and weekly limits, with low-power warnings.",
-  "types": "./types/index.d.ts"
+  "version": "0.2.0",
+  "description": "Power gauge above the prompt: context tokens left, the 5-hour limit, and a weekly pacing plan that gives you a daily ration so the 7-day limit lasts to the last minute.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "workdays": {
+      "type": "string",
+      "title": "Work days",
+      "description": "Days that get a bigger share of the weekly limit, comma separated (mon,tue,wed,thu,fri).",
+      "default": "mon,tue,wed,thu,fri"
+    },
+    "workWeight": {
+      "type": "number",
+      "title": "Work day weight",
+      "description": "How many times bigger a work day's share is than an off day's (2 means a work day gets double).",
+      "default": 2
+    }
+  }
 }

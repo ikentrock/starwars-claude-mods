@@ -1,14 +1,21 @@
 import { atom, read, update } from 'claude-code'
-import type { Register, SessionRateLimit, SessionContextUsage } from 'claude-code'
+import type { EngineInterface, Register, SessionRateLimit, SessionContextUsage } from 'claude-code'
 
-import type { PowerCell } from '../types'
+import type { PowerCell, WeekWindow } from '../types'
+import { baselineFor, computePace, dayKey, parseWorkdays, planRows } from './pace'
+import type { PaceConfig } from './pace'
 
 const cells = atom({ plugin: 'power-cells', key: 'cells' } as const, [], { shape: 'cells-1' })
 const isHidden = atom({ plugin: 'power-cells', key: 'isHidden' } as const, false, {
   shape: 'hidden-1',
 })
 
+const week = atom({ plugin: 'power-cells', key: 'week' } as const, null, { shape: 'week-1' })
+
+type DayRecord = { date: string; windowEnd: number; baseline: number; toasts: number[] }
+
 const WARN_AT = [20, 10, 5]
+const RATION_WARN_AT = [80, 100]
 const NAMES: Record<string, string> = {
   five_hour: 'Shields (5h)',
   seven_day: 'Reactor (7d)',
@@ -56,22 +63,94 @@ const measure = (context: SessionContextUsage, limits: SessionRateLimit[]): Powe
   return out
 }
 
-export const register: Register = on => {
+// Tracks where today's counting starts (kept across sessions) and speaks up at the day's milestones.
+async function trackDay($: EngineInterface, limits: SessionRateLimit[], cfg: PaceConfig) {
+  const limit = limits.find(one => one.kind === 'seven_day')
+  const windowEnd = limit?.resetsAt ? Date.parse(limit.resetsAt) : NaN
+
+  if (!limit || Number.isNaN(windowEnd)) {
+    await update($, week, () => null)
+
+    return
+  }
+
+  const now = Date.now()
+  const today = dayKey(now)
+  const saved = (await $.store.get('day-1')) as DayRecord | undefined
+  const isSameDay =
+    saved !== undefined && saved.date === today && Math.abs(saved.windowEnd - windowEnd) < 3_600_000
+  const record: DayRecord = isSameDay
+    ? saved
+    : { date: today, windowEnd, baseline: baselineFor(now, windowEnd, limit.percentUsed), toasts: [] }
+  const window: WeekWindow = { windowEnd, baseline: record.baseline, percentUsed: limit.percentUsed }
+  const pace = computePace(now, window, cfg)
+  await update($, week, () => window)
+
+  if (!pace) return
+
+  if (!isSameDay) {
+    $.ui.toast(
+      `Rations: ${pace.budget.toFixed(1)}% today (${pace.isWork ? 'work day' : 'off day'}), ${(100 - limit.percentUsed).toFixed(0)}% left for ${pace.daysLeft.toFixed(1)} days.`,
+    )
+  }
+
+  const crossed = RATION_WARN_AT.filter(
+    t => pace.budget > 0 && (pace.used / pace.budget) * 100 >= t && !record.toasts.includes(t),
+  )
+
+  for (const t of crossed) {
+    $.ui.toast(
+      t >= 100
+        ? `Rations: today's ${pace.budget.toFixed(1)}% is spent. Tomorrow's cells are being borrowed.`
+        : `Rations: ${t}% of today's ${pace.budget.toFixed(1)}% used.`,
+    )
+  }
+
+  if (!isSameDay || crossed.length > 0) {
+    await $.store.set('day-1', { ...record, toasts: [...record.toasts, ...crossed] })
+  }
+}
+
+export const register: Register = (on, options) => {
+  const cfg: PaceConfig = {
+    workdays: parseWorkdays(String(options.workdays ?? 'mon,tue,wed,thu,fri')),
+    workWeight: Math.max(0.1, Number(options.workWeight ?? 2) || 2),
+  }
+
   // Lowest threshold already warned about, per gauge; a recharge re-arms it.
   const warned = new Map<string, number>()
 
   on('session.start', async ($, e, next) => {
     const usage = await $.session.usage()
     await update($, cells, () => measure(usage.context, usage.rateLimits))
+    await trackDay($, usage.rateLimits, cfg)
     await $.command.register({
       name: 'power',
-      description: 'Show or hide the Power Cells gauge',
+      description: 'Show or hide the Power Cells gauge; "/power plan" shows the week\'s daily rations',
     })
 
     return next(e)
   })
 
-  on('command.run', { command: 'power' }, async $ => {
+  on('command.run', { command: 'power' }, async ($, e) => {
+    if (String(e.args ?? '').trim().toLowerCase() === 'plan') {
+      const window = await read($, week)
+      const rows = window ? planRows(Date.now(), window, cfg) : []
+
+      if (rows.length === 0) {
+        return { text: 'No weekly limit reported yet. It appears after the first reply on a subscription account.' }
+      }
+
+      const lines = rows.map(
+        row =>
+          `| ${row.label}${row.isToday ? ' (today)' : ''} | ${row.isWork ? 'work' : 'off'} | ${row.budget.toFixed(1)}% | ${row.isToday ? `${row.used.toFixed(1)}%` : ''} |`,
+      )
+
+      return {
+        text: ['| Day | Type | Ration | Used |', '|---|---|---|---|', ...lines].join('\n'),
+      }
+    }
+
     const hidden = !(await read($, isHidden))
     await update($, isHidden, () => hidden)
 
@@ -81,6 +160,7 @@ export const register: Register = on => {
   on('session.measure', async ($, e, next) => {
     const list = measure(e.context, e.rateLimits)
     await update($, cells, () => list)
+    await trackDay($, e.rateLimits, cfg)
 
     for (const cell of list) {
       const last = warned.get(cell.label) ?? 101
@@ -105,16 +185,47 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
     const columns = e.props.bodyColumns ?? 80
     const width = columns >= 100 ? 10 : 6
+    const window = await read($, week)
+    const pace = window ? computePace(Date.now(), window, cfg) : null
+    const ratio = pace && pace.budget > 0 ? pace.used / pace.budget : 0
+    const delta = pace ? pace.weekUsed - pace.expected : 0
 
     return (
-      <Box flexWrap="wrap">
-        {list.map(cell => (
-          <Box key={cell.label} marginRight={2}>
-            <Text dimColor>{columns >= 70 ? cell.label : cell.label.split(' ')[0]} </Text>
-            <Text color={colorFor(cell.percentLeft)}>{bar(cell.percentLeft, width)} </Text>
-            <Text dimColor>{cell.detail}</Text>
+      <Box flexDirection="column">
+        <Box flexWrap="wrap">
+          {list.map(cell => (
+            <Box key={cell.label} marginRight={2}>
+              <Text dimColor>{columns >= 70 ? cell.label : cell.label.split(' ')[0]} </Text>
+              <Text color={colorFor(cell.percentLeft)}>{bar(cell.percentLeft, width)} </Text>
+              <Text dimColor>{cell.detail}</Text>
+            </Box>
+          ))}
+        </Box>
+        {pace && (
+          <Box flexWrap="wrap">
+            <Box marginRight={2}>
+              <Text dimColor>{columns >= 70 ? 'Ration (today)' : 'Today'} </Text>
+              <Text color={ratio >= 1 ? 'red' : ratio >= 0.85 ? 'yellow' : 'green'}>
+                {bar(ratio * 100, width)}{' '}
+              </Text>
+              <Text dimColor>
+                {pace.used.toFixed(1)} / {pace.budget.toFixed(1)}% · {pace.isWork ? 'work day' : 'off day'}
+              </Text>
+            </Box>
+            <Box marginRight={2}>
+              <Text color={delta > 4 ? 'red' : delta < -4 ? 'cyan' : 'green'}>
+                {delta > 4
+                  ? `${delta.toFixed(0)}% over plan, ease off`
+                  : delta < -4
+                    ? `${(-delta).toFixed(0)}% under plan, room to use more`
+                    : 'on plan'}
+              </Text>
+            </Box>
+            <Text dimColor>
+              {pace.daysLeft.toFixed(1)}d left · {pace.perDay.toFixed(1)}%/day avg
+            </Text>
           </Box>
-        ))}
+        )}
       </Box>
     )
   })
