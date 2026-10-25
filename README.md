@@ -1,6 +1,6 @@
 # starwars-claude-mods
 
-Eight local Claude Code mods (UI and hook plugins) with a light Star Wars flavor.
+Nine local Claude Code mods (UI and hook plugins) with a light Star Wars flavor.
 
 | Mod | What it does |
 |---|---|
@@ -12,5 +12,6 @@ Eight local Claude Code mods (UI and hook plugins) with a light Star Wars flavor
 | chat-inventory | Zero-token "In This Chat" panel (`/inventory`). |
 | switchboard | `/mods` panel to toggle mods and hide panels. |
 | power-cells | Context / 5-hour / 7-day usage gauges above the prompt (`/power`). |
+| droid-console | Restyles the whole UI as a droid console: personality palettes, transmission headers, droid spinner words, status band. `/droid` switches personality. |
 
 **Status:** experimental. They pass `claude plugin validate` and `tsc`, but have not been tested at runtime. Expect rough edges.

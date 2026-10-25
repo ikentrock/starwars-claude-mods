@@ -1,0 +1,1 @@
+{ "name": "droid-console", "version": "0.1.0", "description": "Restyles Claude Code as a Star Wars droid console: personality palettes, transmission headers, droid spinner words and a status band. /droid switches personality.", "types": "./types/index.d.ts" }
