@@ -15,3 +15,28 @@ Nine local Claude Code mods (UI and hook plugins) with a light Star Wars flavor.
 | droid-console | Restyles the whole UI as a droid console: personality palettes, transmission headers, droid spinner words, status band. `/droid` switches personality. |
 
 **Status:** experimental. They pass `claude plugin validate` and `tsc`, but have not been tested at runtime. Expect rough edges.
+
+## Install
+
+Add the marketplace once, then install the mods you want (user scope makes them load in every session):
+
+```sh
+claude plugin marketplace add ikentrock/starwars-claude-mods
+claude plugin install brain-dump@starwars-claude-mods --scope user
+claude plugin install cache-clock@starwars-claude-mods --scope user
+claude plugin install chat-inventory@starwars-claude-mods --scope user
+claude plugin install droid-console@starwars-claude-mods --scope user
+claude plugin install handoff@starwars-claude-mods --scope user
+claude plugin install helper-desk@starwars-claude-mods --scope user
+claude plugin install power-cells@starwars-claude-mods --scope user
+claude plugin install reflect@starwars-claude-mods --scope user
+claude plugin install switchboard@starwars-claude-mods --scope user
+```
+
+Or one at a time from a session prompt:
+
+```
+/plugin install <mod> --marketplace ikentrock/starwars-claude-mods
+```
+
+Update later with `claude plugin marketplace update starwars-claude-mods`.

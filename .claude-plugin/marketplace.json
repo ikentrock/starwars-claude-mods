@@ -1,0 +1,65 @@
+{
+  "name": "starwars-claude-mods",
+  "owner": {
+    "name": "ikentrock"
+  },
+  "metadata": {
+    "description": "Nine Claude Code mods (UI and hook plugins) with a light Star Wars flavor."
+  },
+  "plugins": [
+    {
+      "name": "brain-dump",
+      "source": "./brain-dump",
+      "description": "Catches long unstructured brain dumps, asks clarifying questions with a background model, and rewrites them into a structured prompt.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cache-clock",
+      "source": "./cache-clock",
+      "description": "Countdown until the prompt cache goes cold, with a Keep Warm button and /keep-warm command.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "chat-inventory",
+      "source": "./chat-inventory",
+      "description": "Zero-token side panel, In This Chat: goal, to-dos, connectors, skills and files.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "droid-console",
+      "source": "./droid-console",
+      "description": "Restyles Claude Code as a Star Wars droid console: personality palettes, transmission headers, droid spinner words and a status band. /droid switches personality.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "handoff",
+      "source": "./handoff",
+      "description": "Builds a detailed handoff prompt at 250k tokens, on cold cache, or on /handoff, with a one-click fresh chat.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "helper-desk",
+      "source": "./helper-desk",
+      "description": "Purple progress taskbar above the prompt plus a side panel of sub-agents with colors, progress and token cost.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "power-cells",
+      "source": "./power-cells",
+      "description": "Power gauge above the prompt: context tokens left, the 5-hour limit, and a weekly pacing plan that gives you a daily ration so the 7-day limit lasts to the last minute.",
+      "version": "0.2.0"
+    },
+    {
+      "name": "reflect",
+      "source": "./reflect",
+      "description": "Spots hard rules and preferences in your prompts and offers to save them to memory, CLAUDE.md or your second brain.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "switchboard",
+      "source": "./switchboard",
+      "description": "/mods control panel: list every mod, auto-discover new ones, toggle them, hide their panels.",
+      "version": "0.1.0"
+    }
+  ]
+}
