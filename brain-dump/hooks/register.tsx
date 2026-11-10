@@ -1,5 +1,7 @@
 import type { Register } from 'claude-code'
 
+import { detectSide, say } from './side'
+
 const MIN_CHARS = 500
 const MAX_QUESTIONS = 4
 const MODEL = 'haiku'
@@ -51,7 +53,10 @@ export const register: Register = on => {
     if (e.text.startsWith('!raw ')) return next({ ...e, text: e.text.slice(5) })
     if (!isBrainDump(e.text)) return next(e)
 
-    $.ui.toast('Brain Dump: a cluttered mind, this is. Sorting it, I am…')
+    const s = await detectSide($)
+    $.ui.toast(
+      say(s, 'A cluttered mind, this is. Sorting it, I am…', 'Report: an undisciplined transmission. Imposing order…'),
+    )
 
     const asked = await $.model.complete({
       model: MODEL,
@@ -71,7 +76,7 @@ export const register: Register = on => {
     for (const [question = '', ...options] of questions) {
       const answer = await $.ui.ask(question, {
         options: options.filter(Boolean).slice(0, 3),
-        header: 'Brain Dump',
+        header: say(s, 'Brain Dump · Counsel', 'Brain Dump · Briefing'),
       })
       answers.push(`Q: ${question}\nA: ${answer}`)
     }
@@ -86,7 +91,11 @@ export const register: Register = on => {
     await $.prompt.fill({ text: rewritten.text.trim(), mode: 'replace' })
 
     return {
-      drop: 'Brain Dump: your thoughts are sorted. The structured prompt is in your prompt box; edit it, then press Enter. (Prefix a prompt with "!raw " to skip Brain Dump.)',
+      drop: say(
+        s,
+        'Sorted, your thoughts are. In your prompt box, the structured prompt waits; edit it, then press Enter. (Prefix a prompt with "!raw " to skip Brain Dump.)',
+        'Report: your orders are in formation. The structured prompt is in your prompt box; edit it, then press Enter. (Prefix a prompt with "!raw " to skip Brain Dump.)',
+      ),
     }
   })
 }

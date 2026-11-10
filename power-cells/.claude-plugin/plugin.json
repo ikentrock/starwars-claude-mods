@@ -1,6 +1,6 @@
 {
   "name": "power-cells",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Power gauge above the prompt: context tokens left, the 5-hour limit, and a weekly pacing plan that gives you a daily ration so the 7-day limit lasts to the last minute.",
   "types": "./types/index.d.ts",
   "userConfig": {

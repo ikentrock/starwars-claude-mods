@@ -6,7 +6,7 @@ export type DeskTodo = {
 export type DeskAgent = {
   id: string
   name: string
-  color: string
+  slot: number
   tools: number
   tokens: number
   isDone: boolean
@@ -14,6 +14,6 @@ export type DeskAgent = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'helper-desk': { todos: Shaped<DeskTodo[]>; agents: Shaped<DeskAgent[]> }
+    'helper-desk': { todos: Shaped<DeskTodo[]>; agents: Shaped<DeskAgent[]>; side: Shaped<'jedi' | 'sith'> }
   }
 }

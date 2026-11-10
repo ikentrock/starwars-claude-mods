@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { SwitchMod } from '../types'
+import { SIDES, followSide, say, spaced } from './side'
 
 const PANE = 'switchboard'
 const STORE_KEY = 'off'
@@ -9,6 +10,7 @@ const STORE_KEY = 'off'
 const mods = atom({ plugin: 'switchboard', key: 'mods' } as const, [], { shape: 'mods-1' })
 const off = atom({ plugin: 'switchboard', key: 'off' } as const, [], { shape: 'off-1' })
 const panes = atom({ plugin: 'switchboard', key: 'panes' } as const, [], { shape: 'panes-1' })
+const side = atom({ plugin: 'switchboard', key: 'side' } as const, 'sith', { shape: 'side-1' })
 
 const seen = new Map<string, SwitchMod>()
 
@@ -59,12 +61,14 @@ async function refresh($: EngineInterface) {
 
 async function open($: EngineInterface) {
   await refresh($)
-  await $.ui.open({ id: PANE, title: 'Switchboard', focus: true })
+  const title = say(await read($, side), 'Switchboard · Council Chamber', 'Switchboard · War Room')
+  await $.ui.open({ id: PANE, title, focus: true })
 }
 
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    await followSide($, s => update($, side, () => s))
     await $.command.register({ name: 'mods', description: 'Open the Switchboard: toggle your mods' })
     const stored = await $.store.get(STORE_KEY)
     if (typeof stored === 'string') await update($, off, () => JSON.parse(stored) as string[])
@@ -77,7 +81,7 @@ export const register: Register = on => {
   on('command.run', { command: 'mods' }, async $ => {
     await open($)
 
-    return { text: 'Switchboard open.' }
+    return { text: say(await read($, side), 'Open, the Council Chamber is.', 'The War Room is open, my lord.') }
   })
 
   // Every plugin the engine admits joins the list; one switched off is refused.
@@ -100,6 +104,12 @@ export const register: Register = on => {
     const disabled = await read($, off)
     const open_ = await read($, panes)
     const width = Math.max(20, (e.props.bodyColumns ?? 50) - 14)
+    const s = SIDES[await read($, side)]
+    const heading = (text: string) => (
+      <Text color={s.blade} bold>
+        {spaced(text.toUpperCase())}
+      </Text>
+    )
 
     const toggle = async (name: string) => {
       const next = (await read($, off)).includes(name)
@@ -107,14 +117,19 @@ export const register: Register = on => {
         : [...(await read($, off)), name]
       await update($, off, () => next)
       await $.store.set(STORE_KEY, JSON.stringify(next))
+      const lit = !next.includes(name)
       $.ui.toast(
-        `Switchboard: ${name} ${next.includes(name) ? 'off' : 'on'}. Mod hooks apply on the next reload.`,
+        say(
+          s.name,
+          `${lit ? 'Ignited' : 'Sheathed'}, ${name} is. On the next reload, it takes effect.`,
+          `Report: ${name} ${lit ? 'ignited' : 'sheathed'}. It takes effect on the next reload.`,
+        ),
       )
     }
 
     return (
       <Box flexDirection="column">
-        <Text bold>Mods</Text>
+        {heading('Mods')}
         {list.length === 0 && <Text dimColor>No mods found yet.</Text>}
         {list.map(m => (
           <Box key={m.name}>
@@ -122,12 +137,12 @@ export const register: Register = on => {
               key={`t-${m.name}`}
               plain
               onPress={() => toggle(m.name)}
-              label={`${disabled.includes(m.name) ? '[ off ]' : '[ on  ]'} ${m.name}`}
+              label={`${disabled.includes(m.name) ? '▬     off' : '▬━━━━ on '} ${m.name}`}
             />
             <Text dimColor> {m.description.slice(0, width)}</Text>
           </Box>
         ))}
-        <Text bold>Panels</Text>
+        {heading('Panels')}
         {open_.length === 0 && <Text dimColor>No other panels open.</Text>}
         {open_
           .filter(p => p.id !== PANE)

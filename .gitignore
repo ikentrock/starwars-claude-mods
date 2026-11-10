@@ -1,2 +1,4 @@
 node_modules/
 .DS_Store
+# tsc output; the engine loads the .ts sources
+*/hooks/*.js

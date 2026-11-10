@@ -9,6 +9,7 @@ declare module 'claude-code' {
       connectors: Shaped<Record<string, number>>
       skills: Shaped<Record<string, number>>
       files: Shaped<InventoryFile[]>
+      side: Shaped<'jedi' | 'sith'>
     }
   }
 }

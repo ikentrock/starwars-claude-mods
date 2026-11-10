@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { InventoryFile } from '../types'
+import { SIDES, followSide, spaced } from './side'
 
 const PANE = 'in-this-chat'
 const goal = atom({ plugin: 'chat-inventory', key: 'goal' } as const, '', { shape: 'goal-1' })
@@ -9,6 +10,7 @@ const todos = atom({ plugin: 'chat-inventory', key: 'todos' } as const, [], { sh
 const connectors = atom({ plugin: 'chat-inventory', key: 'connectors' } as const, {}, { shape: 'connectors-1' })
 const skills = atom({ plugin: 'chat-inventory', key: 'skills' } as const, {}, { shape: 'skills-1' })
 const files = atom({ plugin: 'chat-inventory', key: 'files' } as const, [], { shape: 'files-1' })
+const side = atom({ plugin: 'chat-inventory', key: 'side' } as const, 'sith', { shape: 'side-1' })
 
 const bump = (counts: Record<string, number>, name: string) => ({
   ...counts,
@@ -25,6 +27,7 @@ async function note($: EngineInterface, path: string, kind: InventoryFile['kind'
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    await followSide($, s => update($, side, () => s))
     await $.command.register({
       name: 'inventory',
       description: 'Open the In This Chat panel',
@@ -96,33 +99,40 @@ export const register: Register = on => {
     const width = Math.max(16, (e.props.bodyColumns ?? 40) - 4)
     const cut = (text: string) => (text.length > width ? `${text.slice(0, width - 1)}…` : text)
     const mark = { completed: '✔', in_progress: '▸', pending: '·' } as Record<string, string>
+    const s = SIDES[await read($, side)]
+    const markColor = { completed: s.done, in_progress: s.blade, pending: undefined } as Record<string, string | undefined>
+    const heading = (text: string) => (
+      <Text color={s.blade} bold>
+        {spaced(text.toUpperCase())}
+      </Text>
+    )
 
     return (
       <Box flexDirection="column">
-        <Text bold>Goal</Text>
+        {heading('Goal')}
         <Text dimColor={g === ''}>{g === '' ? 'Not set yet' : cut(g)}</Text>
-        <Text bold>To-do</Text>
+        {heading('To-do')}
         {list.length === 0 && <Text dimColor>None</Text>}
         {list.map(t => (
           <Text dimColor={t.status === 'completed'}>
-            {mark[t.status] ?? '·'} {cut(t.status === 'in_progress' ? t.activeForm : t.content)}
+            <Text color={markColor[t.status]}>{mark[t.status] ?? '·'}</Text> {cut(t.status === 'in_progress' ? t.activeForm : t.content)}
           </Text>
         ))}
-        <Text bold>Connectors</Text>
+        {heading('Connectors')}
         {Object.keys(conn).length === 0 && <Text dimColor>None called</Text>}
         {Object.entries(conn).map(([name, n]) => (
           <Text>
             {cut(name)} <Text dimColor>×{n}</Text>
           </Text>
         ))}
-        <Text bold>Skills</Text>
+        {heading('Skills')}
         {Object.keys(sk).length === 0 && <Text dimColor>None active</Text>}
         {Object.entries(sk).map(([name, n]) => (
           <Text>
             {cut(name)} <Text dimColor>×{n}</Text>
           </Text>
         ))}
-        <Text bold>Files</Text>
+        {heading('Files')}
         {fl.length === 0 && <Text dimColor>None touched</Text>}
         {fl.slice(-40).map(f => (
           <Text>

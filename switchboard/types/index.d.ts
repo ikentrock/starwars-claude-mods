@@ -6,6 +6,7 @@ declare module 'claude-code' {
       mods: Shaped<SwitchMod[]>
       off: Shaped<string[]>
       panes: Shaped<{ id: string; title: string }[]>
+      side: Shaped<'jedi' | 'sith'>
     }
   }
 }

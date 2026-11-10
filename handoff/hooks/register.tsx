@@ -1,6 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
+import { SIDES, followSide, say, spaced } from './side'
+
 const PANE = 'handoff'
 const TOKEN_LIMIT = 250_000
 const COLD_MS = 5 * 60 * 1000
@@ -12,6 +14,10 @@ const why = atom({ plugin: 'handoff', key: 'why' } as const, '', { shape: 'why-1
 const isOffered = atom({ plugin: 'handoff', key: 'isOffered' } as const, false, {
   shape: 'offered-1',
 })
+const side = atom({ plugin: 'handoff', key: 'side' } as const, 'sith', { shape: 'side-1' })
+
+const voice = async ($: EngineInterface, jedi: string, sith: string) => say(await read($, side), jedi, sith)
+const paneTitle = async ($: EngineInterface) => voice($, 'Handoff Holocron', 'Handoff Orders')
 
 const unique = (items: string[]) => [...new Set(items)]
 const list = (items: string[]) => (items.length ? items.map(i => `- ${i}`).join('\n') : '- none')
@@ -57,13 +63,14 @@ async function build($: EngineInterface, reason: string) {
 
   await update($, text, () => handoff)
   await update($, why, () => reason)
-  await $.ui.open({ id: PANE, title: 'Handoff', focus: true })
+  await $.ui.open({ id: PANE, title: await paneTitle($), focus: true })
 }
 
 export const register: Register = on => {
   let coldTimer: { cancel: () => void } | undefined
 
   on('session.start', async ($, e, next) => {
+    await followSide($, s => update($, side, () => s))
     await $.command.register({
       name: 'handoff',
       description: 'Write a handoff prompt for a fresh chat',
@@ -73,9 +80,11 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'handoff' }, async $ => {
-    await build($, 'You asked for it.')
+    await build($, await voice($, 'Asked for it, you did.', 'By your order, my lord.'))
 
-    return { text: 'Handoff ready in the Handoff pane.' }
+    return {
+      text: await voice($, 'Ready in the Handoff Holocron, your handoff is.', 'Report: handoff orders are ready in their pane.'),
+    }
   })
 
   on('session.end', async ($, e, next) => {
@@ -102,15 +111,28 @@ export const register: Register = on => {
     const context = u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens
     if (context >= TOKEN_LIMIT && !(await read($, isOffered))) {
       await update($, isOffered, () => true)
-      $.ui.toast('Handoff: 250,000 tokens, the context has grown. Preparing a handoff.')
-      void build($, `The conversation reached ${context.toLocaleString()} tokens.`)
+      $.ui.toast(
+        await voice(
+          $,
+          '250,000 tokens, the context has grown. A handoff, I prepare.',
+          'Report: the context has reached 250,000 tokens. Drafting handoff orders.',
+        ),
+      )
+      void build(
+        $,
+        await voice(
+          $,
+          `Reached ${context.toLocaleString()} tokens, the conversation has.`,
+          `The conversation reached ${context.toLocaleString()} tokens.`,
+        ),
+      )
     }
 
     coldTimer?.cancel()
     coldTimer = $.clock.after(COLD_MS, async () => {
       if (await read($, isOffered)) return
       await update($, isOffered, () => true)
-      void build($, 'The prompt cache went cold.')
+      void build($, await voice($, 'Cold, the prompt cache went.', 'The prompt cache went cold.'))
     })
 
     return next(e)
@@ -120,25 +142,37 @@ export const register: Register = on => {
     const { Box, Button, Markdown, Text } = $.ui.resolve(e)
     const handoff = await read($, text)
     const reason = await read($, why)
+    const s = SIDES[await read($, side)]
 
-    if (handoff === '') return <Text dimColor>Nothing yet. Type /handoff.</Text>
+    if (handoff === '') {
+      return <Text dimColor>{say(s.name, 'Nothing yet, there is. Type /handoff.', 'No orders yet. Type /handoff.')}</Text>
+    }
 
     const room = Math.max(8, (e.viewport?.rows ?? 30) - 8)
     const shown = handoff.split('\n').slice(0, room * 2).join('\n')
 
     return (
       <Box flexDirection="column">
+        <Text color={s.blade} bold>
+          {spaced(say(s.name, 'FOR THE NEXT PADAWAN', 'FOR THE NEXT APPRENTICE'))}
+        </Text>
         <Text dimColor>{reason}</Text>
         <Box>
           <Button
             key="fresh"
             variant="primary"
-            label="Start fresh chat"
+            label={say(s.name, 'Begin anew (fresh chat)', 'Deploy to a fresh chat')}
             onPress={async () => {
               await $.command.run({ command: 'clear' })
               await $.prompt.fill({ text: handoff, mode: 'replace' })
               await update($, isOffered, () => false)
-              $.ui.toast('Handoff placed in your prompt box. Press Enter to begin.')
+              $.ui.toast(
+                say(
+                  s.name,
+                  'In your prompt box, the handoff is. Press Enter, and begin you will.',
+                  'Report: the orders are in your prompt box. Press Enter to deploy.',
+                ),
+              )
             }}
           />
           <Button

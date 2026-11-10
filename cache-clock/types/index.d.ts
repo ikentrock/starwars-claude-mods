@@ -6,6 +6,7 @@ declare module 'claude-code' {
       expiresAt: Shaped<number | null>
       warmUntil: Shaped<number | null>
       now: Shaped<number>
+      side: Shaped<'jedi' | 'sith'>
     }
   }
 }

@@ -1,1 +1,18 @@
-{ "name": "droid-console", "version": "0.1.0", "description": "Restyles Claude Code as a Star Wars droid console: personality palettes, transmission headers, droid spinner words and a status band. /droid switches personality.", "types": "./types/index.d.ts" }
+{
+  "name": "droid-console",
+  "version": "0.2.0",
+  "description": "Restyles Claude Code to match Herdr's Jedi Archives and Sith Citadel layouts: Claude Code's theme, side palettes, Herdr's droid voices, spinner words and a status band. /droid switches personality.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "matchTheme": {
+      "type": "string",
+      "title": "Match Claude Code's theme to Herdr",
+      "description": "Inside Herdr, switch Claude Code's theme to light-ansi (Jedi) or dark-ansi (Sith) so it uses the layout's colors; your own theme comes back in the next session outside Herdr.",
+      "default": "on",
+      "options": [
+        "on",
+        "off"
+      ]
+    }
+  }
+}

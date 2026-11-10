@@ -1,5 +1,7 @@
 import type { EngineInterface, Register } from 'claude-code'
 
+import { detectSide, say } from './side'
+
 const MODEL = 'haiku'
 const HINT =
   /\b(always|never|don'?t|do not|stop (doing|using)|from now on|going forward|make sure|i prefer|i like (it )?when|i want you to|must|should always|should never|rule)\b/i
@@ -53,10 +55,11 @@ export const register: Register = (on, options) => {
     if (rule === undefined || e.agentId !== undefined) return next(e)
     pending = undefined
 
-    const choice = await $.ui.ask(`Reflect: a rule, I sense. Save it? "${rule}"`, {
-      options: [...CHOICES],
-      header: 'Reflect',
-    })
+    const s = await detectSide($)
+    const choice = await $.ui.ask(
+      say(s, `A rule, I sense. Into the archives, save it? "${rule}"`, `Report: a standing order detected. Record it, my lord? "${rule}"`),
+      { options: [...CHOICES], header: say(s, 'Reflect · Archives', 'Reflect · Records') },
+    )
     const home = (await $.env.get('HOME')) ?? ''
     const cwd = await $.session.cwd()
 
@@ -69,14 +72,14 @@ export const register: Register = (on, options) => {
         `---\nname: ${name}\ndescription: ${rule.replace(/\n/g, ' ')}\nmetadata:\n  type: feedback\n---\n\n${rule}\n\n**Why:** the user stated it as a standing rule.\n**How to apply:** follow it in every session.\n`,
       )
       await append($, `${dir}/MEMORY.md`, `- [${rule.slice(0, 60)}](${name}.md) — user rule`)
-      $.ui.toast('Reflect: saved to built-in memory.')
+      $.ui.toast(say(s, 'Into memory, the rule goes. Remember it, I will.', 'Report: order recorded in memory.'))
     } else if (choice === 'CLAUDE.md') {
       await append($, `${cwd}/CLAUDE.md`, `- ${rule}`)
-      $.ui.toast('Reflect: added to CLAUDE.md.')
+      $.ui.toast(say(s, 'Written in CLAUDE.md, the rule now is.', 'Report: order added to CLAUDE.md.'))
     } else if (choice === 'Second brain') {
       const file = String(options.secondBrainFile ?? '~/second-brain/rules.md').replace(/^~/, home)
       await append($, file, `- ${rule}`)
-      $.ui.toast(`Reflect: saved to ${file}.`)
+      $.ui.toast(say(s, `In your second brain, saved it is: ${file}`, `Report: order filed in ${file}.`))
     }
 
     return next(e)
